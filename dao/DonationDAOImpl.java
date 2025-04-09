@@ -3,6 +3,7 @@ package dao;
 import entity.model.Donation;
 import entity.model.CashDonation;
 import entity.model.ItemDonation;
+import exception.AdoptionException;
 import util.DBConnUtil;
 
 import java.sql.*;
@@ -13,7 +14,7 @@ public class DonationDAOImpl implements DonationDAO {
     private static final String DB_PROPERTIES_FILE = "db.properties";
 
     @Override
-    public void recordDonation(Donation donation) throws Exception {
+    public void recordDonation(Donation donation) throws AdoptionException {
         String query = "INSERT INTO donations (donor_name, amount, donation_type, donation_date, item_type) VALUES (?, ?, ?, ?, ?)";
         try (Connection conn = DBConnUtil.getConnection(DB_PROPERTIES_FILE);
              PreparedStatement stmt = conn.prepareStatement(query)) {
@@ -29,11 +30,15 @@ public class DonationDAOImpl implements DonationDAO {
                 stmt.setString(5, ((ItemDonation) donation).getItemType());
             }
             stmt.executeUpdate();
+        } catch (SQLException e) {
+            throw new AdoptionException("Error recording donation in the database: " + e.getMessage());
+        } catch (Exception e) {
+            throw new AdoptionException("Unexpected error: " + e.getMessage());
         }
     }
 
     @Override
-    public List<Donation> listDonations() throws Exception {
+    public List<Donation> listDonations() throws AdoptionException {
         List<Donation> donations = new ArrayList<>();
         String query = "SELECT * FROM donations";
         try (Connection conn = DBConnUtil.getConnection(DB_PROPERTIES_FILE);
@@ -51,6 +56,10 @@ public class DonationDAOImpl implements DonationDAO {
                     donations.add(new ItemDonation(donorName, amount, itemType));
                 }
             }
+        } catch (SQLException e) {
+            throw new AdoptionException("Error retrieving donations from the database: " + e.getMessage());
+        } catch (Exception e) {
+            throw new AdoptionException("Unexpected error: " + e.getMessage());
         }
         return donations;
     }
